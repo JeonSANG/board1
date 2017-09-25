@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<style>
+    #board_info{
+        width: 1140px;
+        height : 30px;
+        border-left: 1px solid;
+        border-top: 1px solid;
+        border-bottom: 1px solid;
+        margin: auto;
+    }
+
+    .board_info_column {
+        border-right: 1px solid;
+        height: 30px;
+        float: left;
+        text-align: center;
+    }
+
+    #board_content{
+        width : 1140px;
+        min-height : 200px;
+        border-right : 1px solid;
+        border-left  : 1px solid;
+        border-bottom : 1px solid;
+        margin: auto;
+    }
+
+    #fb_enter{
+        width : 1140px;
+        height : 100px;
+        border-right : 1px solid;
+        border-left  : 1px solid;
+        border-bottom : 1px solid;
+        margin: auto;
+    }
+    .fb_show{
+        width : 1140px;
+        min-height: 40px;
+        border-left  : 1px solid;
+        border-bottom : 1px solid;
+        margin: auto;
+    }
+    .fb_show_column {
+        border-right: 1px solid;
+        min-height: 40px;
+        float: left;
+        text-align: center;
+        font-size: 15px;
+    }
+
+    .fb_fb_column {
+        min-height: 40px;
+        float: left;
+        text-align: center;
+        font-size: 15px;
+    }
+
+</style>
+
+<script>
+    // 글 보기
+    // 제목, 작성자, 날짜, 조회수, 수정, 삭제
+    // 댓글 입력창 , 입력 버튼
+    // 댓글 작성자, 댓글 내용, 날짜, 댓글 달기, 댓글 수정, 댓글 삭제
+
+    var temp  = location.href.split("?");
+    var box = temp[1].split(":");
+    var board_number  = box[0];
+    var user_id = box[1];                                   // 접속한 사람
+    var writer_id;                                          // 글쓴이
+
+    function onload_set(){
+        board_get_info();
+        feedback_get_info();
+        fb_fb_get_info();
+    }
+
+    // 게시글 내용 출력
+    function board_get_info() {
+        var url = "get_board.php?number="+board_number;
+        var xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function () {
+            if(xhr.readyState === 4 && xhr.status === 200){
+                var result = xhr.responseText.split("|I|");
+                var div_board_info = document.getElementById("board_info");
+                var div_board_content = document.getElementById("board_content");
+
+                div_board_info.children[0].innerText = result[1];           // 제목
+                div_board_info.children[2].innerText = result[3];           // 날짜
+                div_board_info.children[1].innerText = result[5];           // 글쓴이 닉네임
+                div_board_info.children[3].innerText = result[6];           // 조회수
+                writer_id = result[4];                                      // 글쓴이 아이디
+                div_board_content.innerText = result[2];                    // 내용
+            }
+        };
+        xhr.open('GET',url,true);
+        xhr.send();
+    }
+
+    // 댓글 출력
+    function feedback_get_info() {
+        var url = "get_feedback.php?bNumber="+board_number;
+        var xhr = new XMLHttpRequest();
+        var div_fb_field = document.getElementById("fb_field");
+
+        xhr.onreadystatechange = function () {
+            if(xhr.readyState === 4 && xhr.status === 200){
+                var result = xhr.responseText.split("|I|");                     // 받은 데이터를 구분한다.
+                var index = 0;
+
+                while(div_fb_field.children.length !== 0 ) {
+                    div_fb_field.removeChild(div_fb_field.lastChild);
+                }
+
+                for( var i = 0; i < result[result.length -1]; i++){
+                    var fb_box = document.createElement("div");                           // 하나의 댓글의 박스 (댓글 + 댓글의 댓글) 아이디 값 = 댓글 번호
+                    var fb_record = document.createElement("div");                        // 댓글, 아이디 값 = 작성자 아이디
+                    fb_record.classList.add("fb_show");                                   // 스타일 적용
+
+                    for(var j=0; j < 8; j++){
+                        var fb_column = document.createElement("div");                    // 댓글 구분
+                        fb_column.classList.add("fb_show_column");
+
+                        // 받는 데이터는 댓글번호, 이름, 내용, 날짜, 아이디 순이다.
+                        switch (j){
+                            case 0 : // 댓글 박스에 아이디 값 설정
+                                fb_box.id = result[index]; index++; break;
+
+                            case 1 :// 댓글 1번째 설정 : 댓글 번호
+                                fb_column.innerText = result[index];
+                                fb_column.style = "width : 149px";
+                                fb_record.appendChild(fb_column);
+                                index++; break;
+
+                            case 2 : // 댓글 2번째 설정 : 내용
+                                fb_column.innerText = result[index];
+                                fb_column.style = "width : 549px";
+                                fb_record.appendChild(fb_column);
+                                index++; break;
+
+                            case 3 : // 댓글 3번째 설정 : 날짜
+                                fb_column.innerText = result[index];
+                                fb_column.style = "width : 229px";
+                                fb_record.appendChild(fb_column);
+                                index++; break;
+
+                            case 4 : // 댓글 4번째 설정 : 아이디
+                                fb_record.id = result[index];                           // 작성자 아이디 값 저장
+                                fb_record.number = fb_box.id;                           // 댓글 번호 저장
+                                index++; break;
+
+                            case 5 : // 댓글 5번째 설정 : 댓글의 댓글달기 버튼
+                                fb_column.innerText = "댓글 달기";
+                                fb_column.style = "width : 69px";
+                                fb_column.onclick = FB_FB_add;
+                                fb_record.appendChild(fb_column); break;
+
+                            case 6 : // 댓글 6번째 설정 : 댓글 수정
+                                fb_column.innerText = "댓글 수정";
+                                fb_column.style = "width : 69px";
+                                fb_column.onclick = FB_remake;
+                                fb_record.appendChild(fb_column); break;
+
+                            case 7 : // 댓글 7번째 설정 : 댓글 삭제
+                                fb_column.innerText = "댓글 삭제";
+                                fb_column.style = "width : 69px";
+                                fb_column.onclick = FB_delete;
+                                fb_record.appendChild(fb_column); break;
+                        }
+                    }
+                    fb_box.appendChild(fb_record);
+                    div_fb_field.appendChild(fb_box);
+                }
+            }
+        };
+        xhr.open('GET',url,true);
+        xhr.send();
+    }
+
+    // 댓글의 댓글 가져오기
+    function fb_fb_get_info() {
+        var url = "get_FB_FB.php?bNumber=" + board_number;
+        var xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function () {
+            if(xhr.readyState === 4 && xhr.status === 200){
+                var result = xhr.responseText.split("|I|");
+                var num_rows = result[result.length - 1];                               // 댓글의 댓글의 갯수
+
+                if( num_rows !== 0){                                                    // 댓글이 있는 경우 동작
+                    var box = [];                                                       // 2차원 배열 만들기
+                    var index = 0;                                                      // 2차원 배열 만들 때 쓸 인덱스용 변수
+                    var div_fb_field = document.getElementById("fb_field");
+
+                    for(var i = 0; i < num_rows; i++){
+                        box[i] = [];
+                        for (var j = 0; j < 6; j++){
+                            box[i][j] = result[index];
+                            index++;
+                        }
+                    }
+
+
+                    // 댓글의 댓글들을 해당 댓글에 보내서 출력한다.
+                    for(var i = 0; i < div_fb_field.children.length; i++){
+                        for (var j = 0; j < num_rows; j++){
+                            if ( div_fb_field.children[i].id === box[j][0] ){
+
+                                var get_div =  div_fb_field.children[i];                     // 해당 댓글을 찾음
+                                var created_record = document.createElement("div");          // 댓글의 댓글의 레코드
+                                created_record.classList.add("fb_show");
+                                created_record.style = "border-right: 1px solid";
+                                for(var k=1; k < 8; k++){
+                                    var created_div = document.createElement("div");
+                                    created_div.classList.add("fb_fb_column");
+                                    switch (k){
+                                        case 1 : created_record.number = box[j][k]; break;
+                                        case 2 :
+                                            created_record.id = box[j][k];
+                                            created_div.style = "width:149px";
+                                            created_record.appendChild(created_div); break;break;
+
+                                        case 3 : // 유저 이름
+                                            created_div.innerText =" ㄴ " + box[j][k] + " : ";
+                                            created_div.style = "width:69px";
+                                            created_record.appendChild(created_div); break;
+
+                                        case 4 : // 댓글의 댓글 내용
+                                            created_div.innerText = box[j][k];
+                                            created_div.style = "width:549px";
+                                            created_record.appendChild(created_div); break;
+
+                                        case 5 : // 댓글의 댓글 날짜
+                                            created_div.innerText = box[j][k];
+                                            created_div.style = "width:229px";
+                                            created_record.appendChild(created_div); break;
+
+                                        case 6 :
+                                            created_div.innerText = "수정";
+                                            created_div.style = "width:69px";
+                                            created_div.onclick = FB_FB_remake;
+                                            created_record.appendChild(created_div); break;
+
+                                        case 7 :
+                                            created_div.innerText = "삭제";
+                                            created_div.style = "width:69px";
+                                            created_div.onclick = FB_FB_delete;
+                                            created_record.appendChild(created_div); break;
+                                    }
+                                }
+                                get_div.appendChild(created_record);
+                            }
+                        }
+                    }
+
+                }
+            }
+        };
+        xhr.open('GET',url,true);
+        xhr.send();
+    }
+
+    // 글 삭제
+    function board_delete() {
+        // 작성자만 삭제 가능
+        if(user_id === writer_id){
+            alert("삭제!");
+            window.location.href = "delete_board.php?bNumber="+board_number;
+        } else {
+            alert("작성자만 삭제할 수 있습니다.");
+        }
+    }
+
+    // 글 수정
+    function board_remake() {
+        // 작성자만 수정 할 수 있게 함
+        if(user_id === writer_id){
+            alert("수정!");
+            window.location.href="write_page.html?alter:"+board_number;
+        } else {
+            alert("작성자만 수정 할 수 있습니다.");
+        }
+    }
+
+    // 댓글 등록
+    function FB_add() {
+        var fContents = document.getElementById("fb_input");
+
+        // 댓글 내용 가져오기
+        if(user_id === ""){
+            alert("로그인 후 사용 가능합니다.");
+        } else if(fContents.value === ""){
+            alert("댓글을 입력 해주세요.");
+        } else {
+            // 글 번호, 쓴 사람 아이디, 댓글 내용을 보낸다.
+            var url = "add_feedback.php?bNumber="+ board_number + "&id=" + user_id + "&fContents=" + fContents.value;
+            var xhr = new XMLHttpRequest();
+
+            xhr.onreadystatechange = function () {
+                if(xhr.readyState === 4 && xhr.status === 200){
+                    fContents.value = "";
+                    feedback_get_info();
+                    fb_fb_get_info();
+                }
+            };
+            xhr.open('GET',url,true);
+            xhr.send();
+        }
+
+    }
+
+    // 댓글 수정
+    function FB_remake() {
+        var clicked_fb =  event.target;
+        var clicked_fb_value = clicked_fb.parentNode.childNodes[1];
+
+        if(user_id !== clicked_fb.parentNode.id ){
+            alert("자신이 작성한 댓글만 수정 할 수 있습니다.")
+        } else {
+            var created_ipt = document.createElement("input");
+            created_ipt.type = "text";
+            created_ipt.style = "width : 500px; height : 30px";
+            clicked_fb_value.innerText = "";
+            clicked_fb_value.appendChild(created_ipt);
+
+            clicked_fb.innerText = "수정 완료";
+            clicked_fb.onclick = function () {
+                var url = "remake_feedback.php?fNumber="+ clicked_fb.parentNode.number + "&value=" + created_ipt.value;
+                var xhr = new XMLHttpRequest();
+
+                xhr.onreadystatechange = function () {
+                    if(xhr.readyState === 4 && xhr.status === 200){
+                        alert(xhr.responseText);
+                        feedback_get_info();
+                        fb_fb_get_info();
+                    }
+                };
+                xhr.open('GET',url,true);
+                xhr.send();
+            }
+        }
+    }
+
+    // 댓글 삭제
+    function FB_delete() {
+        // 댓글 삭제하기
+        var clicked_fb =  event.target.parentNode;
+
+        if(user_id !== clicked_fb.id ){
+            alert("자신이 작성한 댓글만 삭제 할 수 있습니다.")
+        } else {
+            var url = "delete_feedback.php?fNumber="+ clicked_fb.number ;
+            var xhr = new XMLHttpRequest();
+
+            xhr.onreadystatechange = function () {
+                if(xhr.readyState === 4 && xhr.status === 200){
+                    alert(xhr.responseText);
+                    feedback_get_info();
+                    fb_fb_get_info();
+                }
+            };
+            xhr.open('GET',url,true);
+            xhr.send();
+        }
+    }
+
+    // 댓글의 댓글 달기
+    function FB_FB_add() {
+        var get_fb_box = event.target.parentNode.parentNode;                    // 클릭한 댓글의 박스 가져오기
+        var created_div = document.createElement("div");                        // 댓글 박스에 넣을 댓글의 댓글 div
+        var created_ipt = document.createElement("input");                      // 댓글의 댓글을 적을 input text
+        var created_btn = document.createElement("input");                      // 댓글의 댓글을 보낼 버튼
+
+        created_div.classList.add("fb_show");                                   // 스타일 설정
+        created_div.style = "border-right : 1px solid;";
+
+        created_ipt.type = "text";                                              // 인풋 텍스트 설정
+        created_ipt.style = "width : 500px; height : 30px; marin : auto;";
+
+        created_btn.type = "button";                                            // 버튼 설정
+        created_btn.value = "등록";
+        created_btn.onclick = function () {                                     // 버튼을 클릭했을 때 php 파일로 값을 보내서 서버에 값을 저장시킨다.
+
+            if(created_ipt.value === ""){
+                alert("입력하세요");
+            } else {
+                // 게시글의 번호, 댓글의 번호, 작성자 아이디, 작성 내용을 보낸다.
+                var url = "add_fb_fb.php?bNumber="+ board_number + "&fNumber=" + get_fb_box.id + "&user_id="+ user_id + "&fContents=" + created_ipt.value;
+                var xhr = new XMLHttpRequest();
+
+                xhr.onreadystatechange = function () {
+                    if(xhr.readyState === 4 && xhr.status === 200){
+                        alert(xhr.responseText);
+                        feedback_get_info();                                                  // 댓글 리스트 업.
+                        fb_fb_get_info();
+                    }
+                };
+                xhr.open('GET',url,true);
+                xhr.send();
+            }
+
+        };
+
+        created_div.appendChild(created_ipt);                                   // 집어 넣기
+        created_div.appendChild(created_btn);
+        get_fb_box.children[0].appendChild(created_div);
+    }
+
+    // 댓글의 댓글 수정하기
+    function FB_FB_remake() {
+        alert("수정하기");
+        var clicked_fb =  event.target;
+        var clicked_fb_value = clicked_fb.parentNode.childNodes[2];
+
+        if(user_id !== clicked_fb.parentNode.id ){
+            alert("자신이 작성한 댓글만 수정 할 수 있습니다.")
+        } else {
+            var created_ipt = document.createElement("input");
+            created_ipt.type = "text";
+            created_ipt.style = "width : 500px; height : 30px";
+            clicked_fb_value.innerText = "";
+            clicked_fb_value.appendChild(created_ipt);
+
+            clicked_fb.innerText = "수정 완료";
+            clicked_fb.onclick = function () {
+                var url = "remake_FB_FB.php?fb_fNumber="+ clicked_fb.parentNode.number + "&value=" + created_ipt.value;
+                var xhr = new XMLHttpRequest();
+
+                xhr.onreadystatechange = function () {
+                    if(xhr.readyState === 4 && xhr.status === 200){
+                        alert(xhr.responseText);
+                        feedback_get_info();
+                        fb_fb_get_info();
+                    }
+                };
+                xhr.open('GET',url,true);
+                xhr.send();
+            }
+        }
+    }
+
+    // 댓글의 댓글 삭제하기
+    function FB_FB_delete() {
+        var get_id = event.target.parentNode.id;
+        var get_number = event.target.parentNode.number;
+
+        if(user_id !== get_id ){
+            alert("자신이 작성한 댓글만 삭제 할 수 있습니다.")
+        } else {
+            var url = "delete_FB_FB.php?fNumber="+ get_number ;
+            var xhr = new XMLHttpRequest();
+
+            xhr.onreadystatechange = function () {
+                if(xhr.readyState === 4 && xhr.status === 200){
+                    alert(xhr.responseText);
+                    feedback_get_info();
+                    fb_fb_get_info();
+                }
+            };
+            xhr.open('GET',url,true);
+            xhr.send();
+
+        }
+    }
+</script>
+
+<body onload = onload_set()>
+<p style="text-align: center; font-size: 20px" onclick="window.location.href='index.html';"> 목록으로 </p>
+<br>
+    <div id = board_info >
+        <div id = "board_title" class="board_info_column" style="width : 549px; text-align: left;"></div>
+        <div id = "board_writer" class="board_info_column" style="width : 149px;"></div>
+        <div id = "board_date" class="board_info_column" style="width : 229px;"></div>
+        <div id = "board_hits" class="board_info_column" style="width : 69px;"></div>
+        <div id = "board_remake" class="board_info_column" style="width : 69px;" onclick="board_remake()">수정</div>
+        <div id = "board_delete" class="board_info_column" style="width : 69px;" onclick="board_delete()">삭제</div>
+    </div>
+
+    <div id = "board_content"></div>
+
+    <div id = "fb_enter">
+        <textarea id = "fb_input" style="height: 80px; width :900px; margin-top: 7px; margin-left: 20px; float: left"></textarea>
+        <input type="button" id="fb_btn" value="댓글 등록" style="height: 80px; width :80px; margin-left:20px; margin-top: 10px; float: left" onclick="FB_add()">
+    </div>
+
+    <div id="fb_field"> </div>
+
+</body>
+</html>

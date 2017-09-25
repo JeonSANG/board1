@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<style>
+    #longin_box{
+        width: 400px;
+        height: 300px;
+        border: 1px solid;
+        margin: auto;
+    }
+
+    .input_value{
+        width: 200px;
+        height: 30px;
+        margin: auto;
+    }
+
+</style>
+
+<script>
+    // 입력 창 클릭 시 기본 값 지우기
+    function clear_value() {
+        if (event.target.value === "id" || event.target.value === "password") {
+            event.target.value = "";
+        }
+    }
+
+    // 로그인 버튼 클릭 시 입력 값 유효성 검사 후 서버에 보냄
+    function send_data() {
+        var enter_id   = document.getElementById("login_id").value;
+        var enter_pass = document.getElementById("login_pass").value;
+
+        // 아이디, 패스워드 입력 값 확인
+        if (enter_id === "" || enter_id === " " || enter_id === "id"){
+            alert("아이디를 입력하세요");
+        }
+        else if ( enter_pass === "" || enter_pass === " " || enter_pass === "password" ){
+            alert("패스워드를 입력하세요");
+        }
+        else {
+            // 아이디, 패스워드 보내기
+            window.location.href = "login.php?id="+enter_id+"&pass="+enter_pass;
+        }
+
+
+    }
+</script>
+
+<body>
+<div id = "longin_box">
+    <br> <br>
+    <div style="margin: auto; width:205px;" >
+        <input type="text" id="login_id" class="input_value" value="id" onclick="clear_value()">
+        <input type="text" id="login_pass" class="input_value" value="password" onclick="clear_value()"><br>
+        <input type="button" id="login_btn" value="로그인" style="width: 205px; height: 30px" onclick="send_data()"> <br>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html >
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+</head>
+<style>
+    .record{
+        width  : 1000px;
+        height : 30px;
+        border-left : 2px solid;
+        border-top   : 2px solid;
+        border-bottom  : 2px solid;
+    }
+    .column{
+        height : 30px;
+        border-right : 1px solid;
+        float : left;
+        text-align: center;
+
+    }
+    .list_record{
+        width  : 1000px;
+        height : 30px;
+        border-bottom : 1px solid;
+        border-left   : 1px solid;
+    }
+    .page{
+        width:25px;
+        height:10px;
+        margin: auto;
+        float : left;
+    }
+</style>
+
+<script>
+    var login = false;
+    var id    = "";
+    var mode  = "";                             // update 또는 research 를 값으로 가짐
+    var click_page = 1;                         // 클릭한 페이지
+    var first_page = 1;                         // 첫 페이지
+    var NumOfPage;                              // 총 페이지 수
+    var NumOfBoard;                             //받은 데이터의 레코드 갯수
+    var research_value;                          // 검색 내용
+    var research_option;                        // 검색 옵션
+
+    // 게시판 들어올 때 항상 실행할 로그인 체크와 페이지 글 불러오기
+    function onload_set(){
+        mode = "update";
+        Login_check();
+        page_load(mode);
+
+    }
+
+    // 로그인 체크
+    function Login_check() {
+        var xhr = new XMLHttpRequest();
+        var url = "login_check.php";
+        xhr.onreadystatechange = function () {
+            if(xhr.readyState === 4 && xhr.status === 200) {
+                if ( xhr.responseText !== "no" ){
+                    login = true;
+                    id = xhr.responseText;
+                } else {
+                    login = false;
+                }
+            }
+            Login_state_Manage();
+        };
+        xhr.open('GET',url,true);
+        xhr.send();
+    }
+
+    // 로그인 하기
+    function Login() {
+        window.location.href="login.html";
+    }
+
+    // 로그아웃 하기
+    function LogOut() {
+        window.location.href = "logOut.php";
+    }
+
+    // 로그인 상태 창 관리
+    function Login_state_Manage() {
+        var div_login_state = document.getElementById("login_state");
+
+        // div_login_state'에 있던 자식 객체 삭제
+        while(div_login_state.children.length !== 0 ) {
+            div_login_state.removeChild(div_login_state.lastChild);
+        }
+
+        // 버튼 생성
+        var created_btn = document.createElement("input");
+        created_btn.type = "button";
+        created_btn.style = "float:right;";
+
+        // 로그인 상태일 때
+        if( login === true){
+            var created_p = document.createElement("p");
+            created_p.innerText = id + " 님 환영합니다 ";
+            created_p.style = "float:right;";
+
+            created_btn.value = "로그아웃";
+            created_btn.onclick = LogOut;
+
+            div_login_state.appendChild(created_btn);
+            div_login_state.appendChild(created_p);
+        }
+        // 로그 아웃 상태일 때
+        else {
+            created_btn.value = "로그인";
+            created_btn.onclick = Login;
+            div_login_state.appendChild(created_btn);
+        }
+    }
+
+    // 페이지 게시글 불러오기(ajax)
+    function page_load () {
+        // db에 게시글을 요청한다.
+        var xhr = new XMLHttpRequest();
+        var url = "";
+        var Result = "";
+        var div_list = document.getElementById("list");
+
+        if(mode === "update") {
+            url = "board_update.php?page="+ click_page + "&mode=" + mode;
+        } else if (mode === "research") {
+            url = "board_update.php?page="+ click_page + "&mode=" + mode + "&option=" + research_option + "&value=" + research_value;
+        }
+
+        xhr.onreadystatechange = function () {
+            if(xhr.readyState === 4 && xhr.status === 200) {
+                Result = xhr.responseText;                          // 데이터 받기
+                Result = Result.split("||");                        // '||'을 기준으로 받은 값을 스플릿
+                NumOfBoard = Result[Result.length-1];               // 게시물 갯수 받기
+
+                if(NumOfBoard === '0'){                                // 게시글을 못 받아왔을 때
+                    alert("게시글이 없습니다!");
+                } else {                                            // 게시글을 정상적으로 받아왔을 때
+                    var index = 0;                                  // box 배열 용 변수
+                    var box = [];                                   // 데이터를 관리할 2차원 배열
+                    var num = 5;                                    // 한 페이지에 들어갈 게시글 갯수
+
+                    for(let i = 0; i < 5; i++){                     // 2차원 배열 만들기
+                        box[i] = [];
+                    }
+
+                    for (let i = 0 ; i < 5; i++) {                  // 2차원 배열 값 넣기
+                        for (let j = 0; j < 5; j++) {
+                            box[i][j] = Result[index];
+                            index++;
+                        }
+                    }
+
+                    // 페이지 수 구하기
+                    if( NumOfBoard%5 === 0){
+                        NumOfPage = NumOfBoard/5;
+                    } else {
+                        NumOfPage = Math.floor(NumOfBoard/5) + 1;
+                    }
+
+                    // 기존 게시글 지우기
+                    while(div_list.children.length !== 0 ) {
+                        div_list.removeChild(div_list.lastChild);
+                    }
+
+                    if( NumOfBoard%5 !== 0 && (+click_page) === NumOfPage ){
+                        // 마지막 게시글이 5로 나누어 떨어지지 않을 때 찍어낼 게시글 개수 설정하기
+                        num = NumOfBoard%5;
+
+                    } else if(NumOfBoard < 5){
+                        num = NumOfBoard;
+                    } else {
+                        num = 5;
+                    }
+
+                    // 게시판 생성
+                    for (let i = 0 ; i < num ; i++){
+                        // 게시글
+                        var NewRecord = document.createElement("div");
+                        NewRecord.classList.add("list_record");
+
+                        for (let j = 0; j < 5; j++) {
+                            var NewColumn = document.createElement("div");
+                            if ( j === 0 ){                             // 게시글 번호를 레코드의 아이디 값으로 설정
+                                NewRecord.id = box[i][j];
+                            } else {
+                                NewColumn.classList.add("column");
+                                NewColumn.innerHTML = box[i][j];
+                                switch (j) {
+                                    case 1 : NewColumn.style="width:549px;";
+                                        NewColumn.onclick = See_board; break;
+                                    case 2 : NewColumn.style="width:149px;"; break;
+                                    case 3 : NewColumn.style="width:229px;"; break;
+                                    case 4 : NewColumn.style="width:69px;"; break;
+                                }
+                                // 레코드에 칼럼 넣기
+                                NewRecord.appendChild(NewColumn);
+                            }
+                        }
+                        // 레코드를 게시판에 올림
+                        div_list.appendChild(NewRecord);
+                    }
+                    // 페이지 네이션 생성
+                    page_nation();
+                }
+            }
+        };
+        xhr.open('GET',url,true);
+        xhr.send();
+    }
+
+    // 페이지 네이션 갱신 (ajax);
+    function page_nation() {
+        var div_page_nation = document.getElementById("page_nation");
+
+
+
+        // 기존의 페이지 네이션 지우기
+        while(div_page_nation.children.length !== 0 ) {
+            div_page_nation.removeChild(div_page_nation.lastChild);
+        }
+
+        if( first_page === 1 &&  first_page + 4 >= NumOfPage) {
+            // < > 없음
+            for(let i = first_page; i <= NumOfPage; i++){
+                var created_p = document.createElement("p");
+                created_p.classList.add("page");
+                created_p.innerText =" " + i + " ";
+                created_p.onclick = page_click;
+                div_page_nation.appendChild(created_p);
+            }
+
+        } else if ( first_page !== 1 &&  first_page + 4 >= NumOfPage ) {
+            // <
+            for(let i = first_page - 1; i <= NumOfPage; i++){
+                var created_p = document.createElement("p");
+                if ( i === first_page - 1 ) {
+                    created_p.innerText = " < ";
+                    created_p.onclick = pre_page;
+                } else {
+                    created_p.innerText =" " + i + " ";
+                    created_p.onclick = page_click;
+                }
+                created_p.classList.add("page");
+                div_page_nation.appendChild(created_p);
+            }
+
+        } else if ( first_page === 1 &&  first_page + 4 < NumOfPage ) {
+            // >
+            for(let i = first_page; i <= first_page + 5; i++){
+                var created_p = document.createElement("p");
+                if ( i === first_page + 5 ) {
+                    created_p.innerText = " > ";
+                    created_p.onclick = next_page;
+                } else {
+                    created_p.innerText =" " + i + " ";
+                    created_p.onclick = page_click;
+                }
+                created_p.classList.add("page");
+                div_page_nation.appendChild(created_p);
+            }
+
+        } else if ( first_page !== 1 &&  first_page + 4 < NumOfPage ) {
+            // < > 둘다
+            for(let i = first_page - 1 ; i <= first_page + 5; i++){
+                var created_p = document.createElement("p");
+                if ( i === first_page - 1 ) {
+                    created_p.innerText = " < ";
+                    created_p.onclick = pre_page;
+                } else if ( i === first_page + 5 ) {
+                    created_p.innerText = " > ";
+                    created_p.onclick = next_page;
+                } else {
+                    created_p.innerText = " " + i + " ";
+                    created_p.onclick = page_click;
+                }
+                created_p.classList.add("page");
+                div_page_nation.appendChild(created_p);
+            }
+        }
+    }
+
+    // 페이지 네이션 - 페이지 클릭
+    function page_click() {
+        click_page = event.target.innerText;
+        page_load();
+    }
+
+    // 페이지 네이션 - " > " 클릭
+    function next_page() {
+        first_page = first_page + 5;
+        page_nation();
+    }
+
+    // 페이지 네이션 - " < " 클릭
+    function pre_page() {
+        first_page = first_page - 5;
+        page_nation();
+    }
+
+    // 글쓰기 로그인 상태에서만 가능
+    function Write() {
+        if(login === true){
+            window.location.href="write_page.html?insert";
+        } else {
+            alert("로그인 후 이용하실 수 있습니다.");
+        }
+    }
+
+    // 글 보기
+    function See_board() {
+        var board_number = event.target.parentNode.id;
+        window.location.href = "See_board.html?" + board_number + ":" + id;
+    }
+
+    // 검색 (ajax)
+    function Research(){
+        mode = "research";
+        click_page = 1;
+        var select_tag = document.getElementById("what");
+        research_value = document.getElementById("R_value").value;                       // 검색 내용
+        research_option = select_tag.options[select_tag.selectedIndex].text;             // 선택한 검색 옵션 가져 오기
+
+        page_load();
+    }
+</script>
+
+<body onload = onload_set()>
+<div id="board" style="width:1000px; margin: auto;">
+    <div id="login_state">
+        <input type="button" value="로그인" style="float: right" onclick="Login()">
+    </div>
+    <br>
+    <p style="font-size: 20px; text-align: center" onclick="onload_set()"> 게시판</p>
+
+    <div class="record">
+        <div class="column" style="width:548px; border-right : 2px solid;"> 제목 </div>
+        <div class="column" style="width:148px; border-right : 2px solid;"> 작성자 </div>
+        <div class="column" style="width:228px; border-right : 2px solid;"> 날짜 </div>
+        <div class="column" style="width:68px; border-right : 2px solid;"> 조회수 </div>
+    </div>
+
+    <div id = "list"></div> <br>
+
+    <div id = "page_nation" style="width:200px; height:30px; text-align: center; margin: auto"></div> <br>
+
+    <div id="Research" style="float: left">
+        <select id="what" style="height:25px">
+            <option> 제목
+            <option> 내용
+            <option> 작성자
+            <option> 제목 + 내용 + 작성자
+        </select>
+        <input type="text" id="R_value" size="35" style="height:20px">
+        <input type="button" id="R_btn" value="검색" onclick="Research()">
+    </div>
+
+    <input type="button" value="글쓰기" style="float: right" onclick="Write()"> <br>
+</div>
+
+</body>
+</html>

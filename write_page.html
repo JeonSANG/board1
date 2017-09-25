@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+
+<style>
+    #wBoard{
+        width  : 600px;
+        height : 700px;
+        border : 1px solid;
+        margin: auto;
+    }
+
+    .bTitle{
+        width  : 550px;
+        height : 30px;
+        border : 1px solid;
+        font-size: 20px;
+    }
+
+    .bContents{
+        width  : 550px;
+        height : 550px;
+        border : 1px solid;
+        font-size: 20px;
+    }
+</style>
+
+<script>
+    // 글 작성 & 수정
+    var first_title = true;                         // 클릭 시 제목 기본 값 지우기용 변수
+    var first_contents = true;                      // 클릭 시 내용 기본 값 지우기용 변수
+    var temp  = location.href.split("?");           // url'에서 변수 부분 잘라내기
+    var box = temp[1].split(":");                   // : 을 기준으로 변수 구분
+    var mode  = box[0];                             // 글 작성 || 글 수정
+    var bNumber = box[1];                           // 글 수정 시에 가져올 글의 번호
+    var login = false;
+    var id;
+
+    // 로드 될 때 로그인 체크, 아이디 값 설정
+    function check_set() {
+        // alert(bNumber);
+        var xhr = new XMLHttpRequest();
+        var url = "login_check.php";
+        xhr.onreadystatechange = function () {
+            if(xhr.readyState === 4 && xhr.status === 200) {
+                if ( xhr.responseText !== false ){
+                    login = true;
+                    id = xhr.responseText;
+
+                    if(login === false){
+                        // 로그인 안돼 있을 시 'index'로 이동
+                        alert("로그인하셔야 이용하실 수 있습니다!");
+                        window.location.href = "index.html";
+                    } else {
+                        // 로그인 되어 있을 시 히든 태그 값에 아이디, 모드 값 설정
+                        document.getElementsByName("bWriter")[0].value = id;
+                        document.getElementsByName("bMode")[0].value = mode;
+
+                        // 작성 || 수정 파악 후 그에 따른 동작
+                        Mode_set(mode);
+                    }
+                }
+            }
+        };
+        xhr.open('GET',url,true);
+        xhr.send();
+    }
+
+    // 작성 || 수정 구분하여 동작
+    function Mode_set(argMode) {
+        var div_bTitle    = document.getElementsByName("bTitle")[0];
+        var div_bContents = document.getElementsByName("bContents")[0];
+
+        if(argMode === "alter"){
+            // 글 수정 모드
+            // db에 연결해서 해당 글의 정보 가져오기
+            // 가져온 정보를 제목과 내용에 넣기
+            var url = "get_board.php?number="+bNumber;
+            var xhr = new XMLHttpRequest();
+            document.getElementsByName("bNumber")[0].value = bNumber;
+
+            xhr.onreadystatechange = function () {
+                if(xhr.readyState === 4 && xhr.status === 200){
+                    var result = xhr.responseText.split("|I|");
+                    div_bTitle.value = result[1];                       // 제목
+                    div_bContents.value = result[2];                    // 내용
+                }
+            };
+            xhr.open('GET',url,true);
+            xhr.send();
+
+        } else {
+            div_bTitle.onclick = clean_value;
+            div_bContents.onclick = clean_value;
+        }
+    }
+
+    // 취소 시 index 로 이동
+    function Cancel() {
+        window.location.href="index.html";
+    }
+
+    // 첫 클릭 시 제목, 내용 기본 값 지우기
+    function clean_value() {
+        if(event.target.name ==="bTitle" && first_title === true){
+            event.target.value = "";
+            first_title = false;
+        } else if(event.target.name ==="bContents" && first_contents === true){
+            event.target.value = "";
+            first_contents = false;
+        }
+    }
+
+</script>
+
+<body onload = check_set() >
+    <form id ="wBoard" action="add_page.php" method="get">
+        <br> &nbsp; &nbsp;
+        <textarea name = "bTitle" class="bTitle"> 제목</textarea>
+        <br><br> &nbsp; &nbsp;
+
+        <textarea name = "bContents" class="bContents"> 내용</textarea>
+        <br><br>
+
+        <input type="hidden" name="bWriter">
+        <input type="hidden" name="bMode">
+        <input type="hidden" name="bNumber">
+
+        <div style="float: right"> &nbsp&nbsp&nbsp&nbsp </div>
+        <input id="cancel" type="button" value="취소" onclick="Cancel()" style="float: right">
+        <input name="send_board" type="submit" value="작성"  style="float: right">
+
+    </form>
+
+</body>
+</html>
